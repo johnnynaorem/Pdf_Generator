@@ -254,6 +254,82 @@ app.get("/", (req, res) => {
   res.send("Hello from server.")
 })
 
+// app.post("/generate-and-send", upload.none(), async (req, res) => {
+//   const {
+//     businessName,
+//     gstin,
+//     businessAddress,
+//     receiptNumber,
+//     customerName,
+//     customerPhone,
+//     customerAddress,
+//     notes,
+//   } = req.body;
+
+//   const items = req.body.items || [];
+
+//   // Check folder existence and create if not present
+//   const pdfDir = path.join(__dirname, "generatedPdf");
+//   if (!fs.existsSync(pdfDir)) {
+//     fs.mkdirSync(pdfDir);
+//   }
+
+//   const filename = `${customerName?.split(" ")[0]}_${uuidv4()}_.pdf`;
+//   const filepath = path.join(pdfDir, filename);
+
+//   try {
+//     const htmlContent = generateHTML({
+//       businessName,
+//       gstin,
+//       businessAddress,
+//       receiptNumber,
+//       customerName,
+//       customerPhone,
+//       customerAddress,
+//       notes,
+//       items,
+//     });
+
+//     const browser = await puppeteer.launch();
+//     const page = await browser.newPage();
+//     await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+//     await page.pdf({ path: filepath, format: "A4" });
+//     await browser.close();
+
+//     const FormData = require("form-data");
+//     const formData = new FormData();
+//     formData.append("file", fs.createReadStream(filepath));
+
+//     const uploadRes = await axios.post(
+//       "https://tmpfiles.org/api/v1/upload",
+//       formData,
+//       {
+//         headers: formData.getHeaders(),
+//       }
+//     );
+
+//     const rawUrl = uploadRes.data.data.url;
+//     const fileId = rawUrl.split("/")[3]; // '8499799'
+//     const filename = rawUrl.split("/")[4]; // 'abc123.pdf'
+//     const fileUrl = `https://tmpfiles.org/dl/${fileId}/${filename}`;
+//     if (!fileUrl) throw new Error("Upload failed");
+
+//     // Step 3: Send WhatsApp message
+//     const messageResult = await client.messages.create({
+//       from: TWILIO_WHATSAPP,
+//       to: `whatsapp:${customerPhone}`,
+//       body: "Here is your PDF message!",
+//       mediaUrl: [fileUrl],
+//     });
+
+//     res.json({ success: true, sid: messageResult.sid, fileUrl });
+//   } catch (error) {
+
+//     res.status(500).json({ success: false, error: error.message });
+//   } finally {
+//   }
+// });
+
 app.post("/generate-and-send", upload.none(), async (req, res) => {
   const {
     businessName,
@@ -268,10 +344,10 @@ app.post("/generate-and-send", upload.none(), async (req, res) => {
 
   const items = req.body.items || [];
 
-  // Check folder existence and create if not present
-  const pdfDir = path.join(__dirname, "generatedPdf");
+  // ✅ Use /tmp directory for Vercel compatibility
+  const pdfDir = "/tmp/generatedPdf";
   if (!fs.existsSync(pdfDir)) {
-    fs.mkdirSync(pdfDir);
+    fs.mkdirSync(pdfDir, { recursive: true });
   }
 
   const filename = `${customerName?.split(" ")[0]}_${uuidv4()}_.pdf`;
@@ -290,13 +366,14 @@ app.post("/generate-and-send", upload.none(), async (req, res) => {
       items,
     });
 
-    const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch({
+      args: ["--no-sandbox", "--disable-setuid-sandbox"], // ✅ Required for Vercel
+    });
     const page = await browser.newPage();
     await page.setContent(htmlContent, { waitUntil: "networkidle0" });
     await page.pdf({ path: filepath, format: "A4" });
     await browser.close();
 
-    const FormData = require("form-data");
     const formData = new FormData();
     formData.append("file", fs.createReadStream(filepath));
 
@@ -309,12 +386,11 @@ app.post("/generate-and-send", upload.none(), async (req, res) => {
     );
 
     const rawUrl = uploadRes.data.data.url;
-    const fileId = rawUrl.split("/")[3]; // '8499799'
-    const filename = rawUrl.split("/")[4]; // 'abc123.pdf'
-    const fileUrl = `https://tmpfiles.org/dl/${fileId}/${filename}`;
+    const fileId = rawUrl.split("/")[3];
+    const fileName = rawUrl.split("/")[4];
+    const fileUrl = `https://tmpfiles.org/dl/${fileId}/${fileName}`;
     if (!fileUrl) throw new Error("Upload failed");
 
-    // Step 3: Send WhatsApp message
     const messageResult = await client.messages.create({
       from: TWILIO_WHATSAPP,
       to: `whatsapp:${customerPhone}`,
@@ -324,9 +400,7 @@ app.post("/generate-and-send", upload.none(), async (req, res) => {
 
     res.json({ success: true, sid: messageResult.sid, fileUrl });
   } catch (error) {
-
     res.status(500).json({ success: false, error: error.message });
-  } finally {
   }
 });
 
