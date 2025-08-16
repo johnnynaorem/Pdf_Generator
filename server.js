@@ -13,6 +13,9 @@ const chromium = require("chrome-aws-lambda");
 const logo = "http://localhost:3000/asset/images/logo.jpg";
 const dotenv = require("dotenv");
 
+const launchBrowser = require("./launchBrowser");
+const path = require("path");
+
 
 
 //configure env
@@ -369,11 +372,7 @@ app.post("/generate-and-send", upload.none(), async (req, res) => {
     });
 
    // ✅ Launch Puppeteer with chrome-aws-lambda
-    const browser = await puppeteer.launch({
-      args: chromium.args,
-      executablePath: await chromium.executablePath,
-      headless: chromium.headless,
-    });
+    const browser = await launchBrowser();
 
     const page = await browser.newPage();
     await page.setContent(htmlContent, { waitUntil: "networkidle0" });
