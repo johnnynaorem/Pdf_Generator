@@ -7,7 +7,9 @@ const { v4: uuidv4 } = require("uuid");
 const axios = require("axios");
 const twilio = require("twilio");
 const cors = require("cors");
-const puppeteer = require("puppeteer");
+// const puppeteer = require("puppeteer");
+const puppeteer = require("puppeteer-core");
+const chromium = require("chrome-aws-lambda");
 const logo = "http://localhost:3000/asset/images/logo.jpg";
 const dotenv = require("dotenv");
 
@@ -366,9 +368,13 @@ app.post("/generate-and-send", upload.none(), async (req, res) => {
       items,
     });
 
+   // ✅ Launch Puppeteer with chrome-aws-lambda
     const browser = await puppeteer.launch({
-      args: ["--no-sandbox", "--disable-setuid-sandbox"], // ✅ Required for Vercel
+      args: chromium.args,
+      executablePath: await chromium.executablePath,
+      headless: chromium.headless,
     });
+
     const page = await browser.newPage();
     await page.setContent(htmlContent, { waitUntil: "networkidle0" });
     await page.pdf({ path: filepath, format: "A4" });
