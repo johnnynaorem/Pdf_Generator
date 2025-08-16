@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Send PDF via WhatsApp</title>
+</head>
+<body>
+  <h2>Generate PDF and Send via WhatsApp</h2>
+  <form id="pdfForm">
+    <input type="text" name="phone" placeholder="WhatsApp Number (e.g. +919876543210)" required><br><br>
+    <textarea name="message" placeholder="Message to include in PDF" rows="5" cols="40" required></textarea><br><br>
+    <button type="submit">Send PDF</button>
+  </form>
+  <p id="status"></p>
+
+  <script>
+    const form = document.getElementById('pdfForm');
+    console.log("Form element:", form);
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      console.log("Form data:", formData);
+      const res = await fetch('/generate-and-send', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      document.getElementById('status').innerText = data.success
+        ? 'PDF sent via WhatsApp!'
+        : 'Error: ' + data.error;
+    });
+  </script>
+</body>
+</html>
