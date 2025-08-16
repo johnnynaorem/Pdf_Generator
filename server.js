@@ -14,7 +14,6 @@ const logo = "http://localhost:3000/asset/images/logo.jpg";
 const dotenv = require("dotenv");
 
 const launchBrowser = require("./launchBrowser");
-const path = require("path");
 
 
 
