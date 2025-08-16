@@ -250,6 +250,10 @@ function generateHTML({
 }
 
 // Main endpoint
+app.get("/", (req, res) => {
+  res.send("Hello from server.")
+})
+
 app.post("/generate-and-send", upload.none(), async (req, res) => {
   const {
     businessName,
